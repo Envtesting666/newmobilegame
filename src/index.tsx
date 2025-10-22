@@ -17,38 +17,8 @@ interface Team {
 }
 
 interface Translations {
-  tr: {
-    brand: string;
-    start: string;
-    settings: string;
-    exit: string;
-    back: string;
-    language: string;
-    resolution: string;
-    fullscreen: string;
-    volume: string;
-    mute: string;
-    superlig: string;
-    laliga: string;
-    continue: string;
-    selectTeam: string;
-  };
-  en: {
-    brand: string;
-    start: string;
-    settings: string;
-    exit: string;
-    back: string;
-    language: string;
-    resolution: string;
-    fullscreen: string;
-    volume: string;
-    mute: string;
-    superlig: string;
-    laliga: string;
-    continue: string;
-    selectTeam: string;
-  };
+  tr: { [key: string]: string };
+  en: { [key: string]: string };
 }
 
 // ============================================================================
@@ -70,7 +40,7 @@ const translations: Translations = {
     superlig: 'Süper Lig',
     laliga: 'La Liga',
     continue: 'DEVAM ET',
-    selectTeam: 'Takım Seçin'
+    selectTeam: 'TAKIM SEÇİMİ'
   },
   en: {
     brand: 'AKKAYA GAMES',
@@ -86,7 +56,7 @@ const translations: Translations = {
     superlig: 'Super League',
     laliga: 'La Liga',
     continue: 'CONTINUE',
-    selectTeam: 'Select Team'
+    selectTeam: 'TEAM SELECTION'
   }
 };
 
@@ -114,26 +84,56 @@ const teams: Record<League, Team[]> = {
 };
 
 // ============================================================================
-// AUDIO GENERATION (Procedural)
+// HEXAGON SVG COMPONENT
 // ============================================================================
 
-const generateClickSound = (): string => {
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const duration = 0.05;
-  const sampleRate = audioContext.sampleRate;
-  const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
-  const data = buffer.getChannelData(0);
+const HexagonDecor: React.FC<{ size: number; style?: CSSProperties }> = ({ size, style }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" style={style}>
+    <polygon
+      points="50,5 90,27 90,73 50,95 10,73 10,27"
+      fill="none"
+      stroke="rgba(180, 190, 200, 0.3)"
+      strokeWidth="1"
+    />
+    <polygon
+      points="50,15 80,32 80,68 50,85 20,68 20,32"
+      fill="none"
+      stroke="rgba(180, 190, 200, 0.15)"
+      strokeWidth="0.5"
+    />
+  </svg>
+);
 
-  for (let i = 0; i < buffer.length; i++) {
-    const t = i / sampleRate;
-    data[i] = Math.sin(2 * Math.PI * 800 * t) * Math.exp(-t * 50) * 0.3;
-  }
+// ============================================================================
+// CORNER DECORATION COMPONENT
+// ============================================================================
 
-  const source = audioContext.createBufferSource();
-  source.buffer = buffer;
-  source.connect(audioContext.destination);
+const CornerDecor: React.FC<{ position: 'tl' | 'tr' | 'bl' | 'br' }> = ({ position }) => {
+  const positionStyles: Record<string, CSSProperties> = {
+    tl: { top: 0, left: 0 },
+    tr: { top: 0, right: 0, transform: 'scaleX(-1)' },
+    bl: { bottom: 0, left: 0, transform: 'scaleY(-1)' },
+    br: { bottom: 0, right: 0, transform: 'scale(-1)' }
+  };
 
-  return 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+  return (
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 40 40"
+      style={{
+        position: 'absolute',
+        opacity: 0.4,
+        pointerEvents: 'none',
+        ...positionStyles[position]
+      }}
+    >
+      <line x1="0" y1="15" x2="15" y2="15" stroke="rgba(180, 190, 200, 0.6)" strokeWidth="1" />
+      <line x1="15" y1="0" x2="15" y2="15" stroke="rgba(180, 190, 200, 0.6)" strokeWidth="1" />
+      <line x1="0" y1="8" x2="8" y2="8" stroke="rgba(180, 190, 200, 0.4)" strokeWidth="0.5" />
+      <line x1="8" y1="0" x2="8" y2="8" stroke="rgba(180, 190, 200, 0.4)" strokeWidth="0.5" />
+    </svg>
+  );
 };
 
 // ============================================================================
@@ -141,7 +141,6 @@ const generateClickSound = (): string => {
 // ============================================================================
 
 const App: React.FC = () => {
-  // State Management
   const [currentView, setCurrentView] = useState<View>('main');
   const [language, setLanguage] = useState<Language>('tr');
   const [resolution, setResolution] = useState<Resolution>('1920x1080');
@@ -152,37 +151,24 @@ const App: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [fadeIn, setFadeIn] = useState<boolean>(false);
 
-  // Refs
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   const clickSoundRef = useRef<HTMLAudioElement | null>(null);
 
   const t = translations[language];
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
-
   useEffect(() => {
     setFadeIn(true);
-
-    // Try to play background music
     if (bgMusicRef.current) {
       bgMusicRef.current.volume = volume / 100;
-      bgMusicRef.current.play().catch(() => {
-        // Auto-play blocked, will play on first interaction
-      });
+      bgMusicRef.current.play().catch(() => {});
     }
-  }, []);
+  }, [volume]);
 
   useEffect(() => {
     if (bgMusicRef.current) {
       bgMusicRef.current.volume = isMuted ? 0 : volume / 100;
     }
   }, [volume, isMuted]);
-
-  // ============================================================================
-  // AUDIO HANDLERS
-  // ============================================================================
 
   const playClickSound = () => {
     if (clickSoundRef.current) {
@@ -197,77 +183,29 @@ const App: React.FC = () => {
     }
   };
 
-  // ============================================================================
-  // EVENT HANDLERS
-  // ============================================================================
-
-  const handleStart = () => {
-    playClickSound();
-    playBgMusic();
-    setCurrentView('career');
-    setSelectedTeam(null);
-  };
-
-  const handleSettings = () => {
-    playClickSound();
-    playBgMusic();
-    setCurrentView('settings');
-  };
-
-  const handleExit = () => {
-    playClickSound();
-    window.close();
-  };
-
-  const handleBack = () => {
-    playClickSound();
-    setCurrentView('main');
-  };
-
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    playClickSound();
-    setLanguage(e.target.value as Language);
-  };
-
-  const handleResolutionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    playClickSound();
-    setResolution(e.target.value as Resolution);
-  };
-
+  // Event Handlers
+  const handleStart = () => { playClickSound(); playBgMusic(); setCurrentView('career'); setSelectedTeam(null); };
+  const handleSettings = () => { playClickSound(); playBgMusic(); setCurrentView('settings'); };
+  const handleExit = () => { playClickSound(); window.close(); };
+  const handleBack = () => { playClickSound(); setCurrentView('main'); };
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => { playClickSound(); setLanguage(e.target.value as Language); };
+  const handleResolutionChange = (e: React.ChangeEvent<HTMLSelectElement>) => { playClickSound(); setResolution(e.target.value as Resolution); };
   const handleFullscreenToggle = () => {
     playClickSound();
     setFullscreen(!fullscreen);
-
     if (!fullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     } else {
       document.exitFullscreen().catch(() => {});
     }
   };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(Number(e.target.value));
-  };
-
-  const handleMuteToggle = () => {
-    playClickSound();
-    setIsMuted(!isMuted);
-  };
-
-  const handleLeagueChange = (league: League) => {
-    playClickSound();
-    setSelectedLeague(league);
-    setSelectedTeam(null);
-  };
-
-  const handleTeamSelect = (teamId: string) => {
-    playClickSound();
-    setSelectedTeam(teamId);
-  };
-
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => setVolume(Number(e.target.value));
+  const handleMuteToggle = () => { playClickSound(); setIsMuted(!isMuted); };
+  const handleLeagueChange = (league: League) => { playClickSound(); setSelectedLeague(league); setSelectedTeam(null); };
+  const handleTeamSelect = (teamId: string) => { playClickSound(); setSelectedTeam(teamId); };
   const handleContinue = () => {
     playClickSound();
-    alert(`${t.continue}: ${teams[selectedLeague].find(t => t.id === selectedTeam)?.name}`);
+    alert(`${t.continue}: ${teams[selectedLeague].find(team => team.id === selectedTeam)?.name}`);
   };
 
   // ============================================================================
@@ -278,51 +216,74 @@ const App: React.FC = () => {
     container: {
       width: '100vw',
       height: '100vh',
-      background: 'linear-gradient(135deg, #0a0e14 0%, #141922 50%, #0f1419 100%)',
+      background: '#0a0a0c',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
       opacity: fadeIn ? 1 : 0,
-      transition: 'opacity 1s ease-in-out',
-      position: 'relative'
+      transition: 'opacity 1.2s ease-in-out',
+      position: 'relative',
+      fontFamily: '"Courier New", Courier, monospace'
     },
-    backgroundPattern: {
+    gridPattern: {
       position: 'absolute',
       top: 0,
       left: 0,
       width: '100%',
       height: '100%',
-      backgroundImage: `repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(255, 255, 255, 0.03) 2px,
-        rgba(255, 255, 255, 0.03) 4px
-      )`,
-      pointerEvents: 'none'
+      backgroundImage: `
+        linear-gradient(rgba(180, 190, 200, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(180, 190, 200, 0.03) 1px, transparent 1px)
+      `,
+      backgroundSize: '30px 30px',
+      pointerEvents: 'none',
+      zIndex: 1
+    },
+    hexBackground: {
+      position: 'absolute',
+      top: '10%',
+      right: '5%',
+      opacity: 0.15,
+      pointerEvents: 'none',
+      zIndex: 1
     },
     mainContent: {
       width: '100%',
-      maxWidth: '1400px',
+      maxWidth: '1200px',
       height: '100%',
-      maxHeight: '900px',
-      padding: '40px',
+      maxHeight: '800px',
+      padding: '30px',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      zIndex: 1
+      zIndex: 2
+    },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '50px',
+      paddingBottom: '20px',
+      borderBottom: '1px solid rgba(180, 190, 200, 0.15)',
+      position: 'relative'
     },
     brand: {
-      fontSize: 'clamp(28px, 5vw, 48px)',
+      fontSize: 'clamp(20px, 3vw, 32px)',
       fontWeight: 700,
-      letterSpacing: '8px',
-      color: '#ffffff',
-      textAlign: 'center',
-      marginBottom: '60px',
+      letterSpacing: '6px',
+      color: '#b4bec8',
       textTransform: 'uppercase',
-      textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-      fontFamily: 'monospace'
+      fontFamily: '"Courier New", Courier, monospace',
+      position: 'relative'
+    },
+    versionBadge: {
+      fontSize: '10px',
+      color: 'rgba(180, 190, 200, 0.5)',
+      letterSpacing: '2px',
+      padding: '4px 8px',
+      border: '1px solid rgba(180, 190, 200, 0.2)',
+      clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)'
     },
     menuContainer: {
       flex: 1,
@@ -330,105 +291,140 @@ const App: React.FC = () => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '20px'
+      gap: '15px',
+      position: 'relative'
     },
     button: {
-      width: '280px',
-      padding: '16px 32px',
-      fontSize: '18px',
-      fontWeight: 600,
-      letterSpacing: '3px',
-      color: '#ffffff',
-      background: 'rgba(20, 25, 34, 0.7)',
-      border: '2px solid rgba(74, 144, 226, 0.4)',
-      borderRadius: '2px',
+      width: '320px',
+      padding: '18px 0',
+      fontSize: '15px',
+      fontWeight: 700,
+      letterSpacing: '4px',
+      color: '#b4bec8',
+      background: 'rgba(15, 18, 22, 0.8)',
+      border: '1px solid rgba(180, 190, 200, 0.25)',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       textTransform: 'uppercase',
       position: 'relative',
-      overflow: 'hidden',
-      fontFamily: 'monospace'
+      fontFamily: '"Courier New", Courier, monospace',
+      clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)',
+      outline: 'none'
     },
     buttonHover: {
-      background: 'rgba(20, 25, 34, 0.9)',
-      border: '2px solid rgba(74, 144, 226, 1)',
-      boxShadow: 'inset 0 0 20px rgba(74, 144, 226, 0.3), 0 0 20px rgba(74, 144, 226, 0.2)',
-      transform: 'translateY(-2px)'
+      background: 'rgba(20, 25, 30, 0.95)',
+      borderColor: '#b4bec8',
+      color: '#ffffff',
+      boxShadow: 'inset 0 0 20px rgba(180, 190, 200, 0.1)',
+      transform: 'translateX(4px)'
+    },
+    buttonInner: {
+      position: 'absolute',
+      bottom: '4px',
+      left: '12px',
+      right: '12px',
+      height: '2px',
+      background: 'rgba(180, 190, 200, 0.15)',
+      transition: 'all 0.2s ease'
+    },
+    buttonInnerActive: {
+      background: '#b4bec8',
+      boxShadow: '0 0 10px rgba(180, 190, 200, 0.5)'
     },
     settingsContainer: {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      gap: '30px',
-      maxWidth: '600px',
+      gap: '20px',
+      maxWidth: '700px',
       margin: '0 auto',
       width: '100%'
     },
+    settingPanel: {
+      background: 'rgba(15, 18, 22, 0.7)',
+      border: '1px solid rgba(180, 190, 200, 0.2)',
+      clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)',
+      padding: '20px',
+      position: 'relative'
+    },
     settingRow: {
       display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-      padding: '20px',
-      background: 'rgba(20, 25, 34, 0.6)',
-      border: '1px solid rgba(74, 144, 226, 0.2)',
-      borderRadius: '2px'
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '20px',
+      marginBottom: '15px'
     },
     label: {
-      fontSize: '14px',
-      fontWeight: 600,
-      color: '#a0aec0',
+      fontSize: '11px',
+      fontWeight: 700,
+      color: 'rgba(180, 190, 200, 0.7)',
       textTransform: 'uppercase',
-      letterSpacing: '2px'
+      letterSpacing: '2px',
+      flex: 1
+    },
+    value: {
+      fontSize: '13px',
+      color: '#b4bec8',
+      fontWeight: 700,
+      letterSpacing: '1px'
     },
     select: {
-      padding: '12px',
-      fontSize: '16px',
-      background: 'rgba(10, 14, 20, 0.8)',
-      border: '1px solid rgba(74, 144, 226, 0.3)',
-      borderRadius: '2px',
-      color: '#ffffff',
+      padding: '10px 15px',
+      fontSize: '12px',
+      background: 'rgba(8, 10, 12, 0.9)',
+      border: '1px solid rgba(180, 190, 200, 0.25)',
+      color: '#b4bec8',
       cursor: 'pointer',
-      outline: 'none'
+      outline: 'none',
+      fontFamily: '"Courier New", Courier, monospace',
+      letterSpacing: '1px',
+      clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)'
     },
-    toggle: {
+    toggleContainer: {
       display: 'flex',
       alignItems: 'center',
-      gap: '12px'
+      gap: '10px'
     },
     toggleSwitch: {
-      width: '50px',
-      height: '26px',
-      background: 'rgba(10, 14, 20, 0.8)',
-      border: '1px solid rgba(74, 144, 226, 0.3)',
-      borderRadius: '13px',
+      width: '48px',
+      height: '24px',
+      background: 'rgba(8, 10, 12, 0.9)',
+      border: '1px solid rgba(180, 190, 200, 0.25)',
       position: 'relative',
       cursor: 'pointer',
-      transition: 'all 0.3s ease'
+      transition: 'all 0.3s ease',
+      clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)'
     },
     toggleSwitchActive: {
-      background: 'rgba(74, 144, 226, 0.5)',
-      border: '1px solid rgba(74, 144, 226, 1)'
+      background: 'rgba(180, 190, 200, 0.2)',
+      borderColor: '#b4bec8'
     },
     toggleThumb: {
-      width: '20px',
-      height: '20px',
-      background: '#ffffff',
-      borderRadius: '50%',
+      width: '16px',
+      height: '16px',
+      background: 'rgba(180, 190, 200, 0.6)',
       position: 'absolute',
-      top: '2px',
-      left: '3px',
+      top: '3px',
+      left: '4px',
       transition: 'all 0.3s ease',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+      clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)'
     },
     toggleThumbActive: {
-      left: '26px'
+      left: '26px',
+      background: '#b4bec8',
+      boxShadow: '0 0 10px rgba(180, 190, 200, 0.5)'
+    },
+    sliderContainer: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '15px'
     },
     slider: {
-      width: '100%',
-      height: '6px',
-      background: 'rgba(10, 14, 20, 0.8)',
-      border: '1px solid rgba(74, 144, 226, 0.3)',
-      borderRadius: '3px',
+      flex: 1,
+      height: '3px',
+      background: 'rgba(8, 10, 12, 0.9)',
+      border: '1px solid rgba(180, 190, 200, 0.2)',
       outline: 'none',
       cursor: 'pointer',
       appearance: 'none',
@@ -438,73 +434,84 @@ const App: React.FC = () => {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
-      gap: '30px'
+      gap: '25px'
     },
     leagueTabs: {
       display: 'flex',
-      gap: '20px',
-      justifyContent: 'center',
-      borderBottom: '1px solid rgba(74, 144, 226, 0.2)',
-      paddingBottom: '10px'
+      gap: '0',
+      borderBottom: '1px solid rgba(180, 190, 200, 0.15)'
     },
     leagueTab: {
-      padding: '12px 32px',
-      fontSize: '16px',
-      fontWeight: 600,
-      color: '#a0aec0',
+      flex: 1,
+      padding: '15px 0',
+      fontSize: '12px',
+      fontWeight: 700,
+      color: 'rgba(180, 190, 200, 0.5)',
       background: 'transparent',
       border: 'none',
       cursor: 'pointer',
       position: 'relative',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       textTransform: 'uppercase',
-      letterSpacing: '2px'
+      letterSpacing: '3px',
+      fontFamily: '"Courier New", Courier, monospace',
+      outline: 'none'
     },
     leagueTabActive: {
-      color: '#4a90e2',
-      borderBottom: '3px solid #4a90e2'
+      color: '#b4bec8',
+      borderBottom: '2px solid #b4bec8'
     },
     teamGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-      gap: '20px',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+      gap: '15px',
       overflowY: 'auto',
       overflowX: 'hidden',
-      maxHeight: '500px',
-      padding: '10px'
+      maxHeight: '450px',
+      padding: '5px',
+      scrollbarWidth: 'thin',
+      scrollbarColor: 'rgba(180, 190, 200, 0.3) transparent'
     },
     teamCard: {
-      padding: '30px 20px',
-      background: 'rgba(20, 25, 34, 0.7)',
-      border: '2px solid rgba(74, 144, 226, 0.3)',
-      borderRadius: '2px',
+      padding: '25px 15px',
+      background: 'rgba(15, 18, 22, 0.7)',
+      border: '1px solid rgba(180, 190, 200, 0.2)',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: '12px'
+      gap: '12px',
+      position: 'relative',
+      clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)'
+    },
+    teamCardHover: {
+      borderColor: 'rgba(180, 190, 200, 0.5)',
+      transform: 'translateY(-3px)'
     },
     teamCardSelected: {
-      background: 'rgba(20, 25, 34, 0.9)',
-      border: '2px solid #4a90e2',
-      boxShadow: 'inset 0 0 30px rgba(74, 144, 226, 0.4), 0 0 20px rgba(74, 144, 226, 0.3)'
+      background: 'rgba(20, 25, 30, 0.9)',
+      borderColor: '#b4bec8',
+      boxShadow: 'inset 0 0 30px rgba(180, 190, 200, 0.15)'
     },
     teamLogo: {
-      fontSize: '48px',
-      filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))'
+      fontSize: '52px',
+      filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.2))'
     },
     teamName: {
-      fontSize: '14px',
-      fontWeight: 600,
-      color: '#ffffff',
+      fontSize: '11px',
+      fontWeight: 700,
+      color: '#b4bec8',
       textAlign: 'center',
       textTransform: 'uppercase',
-      letterSpacing: '1px'
+      letterSpacing: '2px'
     },
-    continueButton: {
-      alignSelf: 'center',
-      marginTop: '20px'
+    actionBar: {
+      display: 'flex',
+      gap: '15px',
+      justifyContent: 'center',
+      paddingTop: '20px',
+      borderTop: '1px solid rgba(180, 190, 200, 0.15)'
     },
     buttonDisabled: {
       opacity: 0.3,
@@ -514,68 +521,85 @@ const App: React.FC = () => {
   };
 
   // ============================================================================
-  // RENDER HELPERS
+  // RENDER COMPONENTS
   // ============================================================================
+
+  const DestinyButton: React.FC<{
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+    style?: CSSProperties;
+  }> = ({ label, onClick, disabled, style }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    return (
+      <button
+        style={{
+          ...styles.button,
+          ...(isHovered && !disabled ? styles.buttonHover : {}),
+          ...(disabled ? styles.buttonDisabled : {}),
+          ...style
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={onClick}
+        disabled={disabled}
+      >
+        {label}
+        <div style={{
+          ...styles.buttonInner,
+          ...(isHovered && !disabled ? styles.buttonInnerActive : {})
+        }} />
+        <CornerDecor position="tl" />
+        <CornerDecor position="br" />
+      </button>
+    );
+  };
 
   const renderMainMenu = () => (
     <>
-      <div style={styles.brand}>{t.brand}</div>
+      <div style={styles.header}>
+        <div style={styles.brand}>{t.brand}</div>
+        <div style={styles.versionBadge}>V1.0.0</div>
+      </div>
       <div style={styles.menuContainer}>
-        <button
-          style={styles.button}
-          onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.button)}
-          onClick={handleStart}
-        >
-          {t.start}
-        </button>
-        <button
-          style={styles.button}
-          onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.button)}
-          onClick={handleSettings}
-        >
-          {t.settings}
-        </button>
-        <button
-          style={styles.button}
-          onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.button)}
-          onClick={handleExit}
-        >
-          {t.exit}
-        </button>
+        <DestinyButton label={t.start} onClick={handleStart} />
+        <DestinyButton label={t.settings} onClick={handleSettings} />
+        <DestinyButton label={t.exit} onClick={handleExit} />
       </div>
     </>
   );
 
   const renderSettings = () => (
     <>
-      <div style={styles.brand}>{t.settings}</div>
+      <div style={styles.header}>
+        <div style={styles.brand}>{t.settings}</div>
+      </div>
       <div style={styles.settingsContainer}>
-        {/* Language */}
-        <div style={styles.settingRow}>
-          <label style={styles.label}>{t.language}</label>
-          <select style={styles.select} value={language} onChange={handleLanguageChange}>
-            <option value="tr">Türkçe</option>
-            <option value="en">English</option>
-          </select>
+        <div style={styles.settingPanel}>
+          <CornerDecor position="tl" />
+          <CornerDecor position="br" />
+          <div style={styles.settingRow}>
+            <label style={styles.label}>{t.language}</label>
+            <select style={styles.select} value={language} onChange={handleLanguageChange}>
+              <option value="tr">TÜRKÇE</option>
+              <option value="en">ENGLISH</option>
+            </select>
+          </div>
         </div>
 
-        {/* Resolution */}
-        <div style={styles.settingRow}>
-          <label style={styles.label}>{t.resolution}</label>
-          <select style={styles.select} value={resolution} onChange={handleResolutionChange}>
-            <option value="1920x1080">1920 x 1080</option>
-            <option value="1280x720">1280 x 720</option>
-            <option value="2560x1440">2560 x 1440</option>
-          </select>
-        </div>
-
-        {/* Fullscreen */}
-        <div style={styles.settingRow}>
-          <label style={styles.label}>{t.fullscreen}</label>
-          <div style={styles.toggle}>
+        <div style={styles.settingPanel}>
+          <CornerDecor position="tl" />
+          <CornerDecor position="br" />
+          <div style={styles.settingRow}>
+            <label style={styles.label}>{t.resolution}</label>
+            <select style={styles.select} value={resolution} onChange={handleResolutionChange}>
+              <option value="1920x1080">1920 × 1080</option>
+              <option value="1280x720">1280 × 720</option>
+              <option value="2560x1440">2560 × 1440</option>
+            </select>
+          </div>
+          <div style={styles.settingRow}>
+            <label style={styles.label}>{t.fullscreen}</label>
             <div
               style={{
                 ...styles.toggleSwitch,
@@ -583,30 +607,34 @@ const App: React.FC = () => {
               }}
               onClick={handleFullscreenToggle}
             >
-              <div
-                style={{
-                  ...styles.toggleThumb,
-                  ...(fullscreen ? styles.toggleThumbActive : {})
-                }}
-              />
+              <div style={{
+                ...styles.toggleThumb,
+                ...(fullscreen ? styles.toggleThumbActive : {})
+              }} />
             </div>
           </div>
         </div>
 
-        {/* Volume */}
-        <div style={styles.settingRow}>
-          <label style={styles.label}>{t.volume}: {volume}%</label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={handleVolumeChange}
-            style={styles.slider}
-            disabled={isMuted}
-          />
-          <div style={styles.toggle}>
-            <label style={{...styles.label, fontSize: '12px'}}>{t.mute}</label>
+        <div style={styles.settingPanel}>
+          <CornerDecor position="tl" />
+          <CornerDecor position="br" />
+          <div style={styles.settingRow}>
+            <label style={styles.label}>{t.volume}</label>
+            <div style={styles.sliderContainer}>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeChange}
+                style={styles.slider}
+                disabled={isMuted}
+              />
+              <span style={styles.value}>{volume}</span>
+            </div>
+          </div>
+          <div style={styles.settingRow}>
+            <label style={styles.label}>{t.mute}</label>
             <div
               style={{
                 ...styles.toggleSwitch,
@@ -614,33 +642,59 @@ const App: React.FC = () => {
               }}
               onClick={handleMuteToggle}
             >
-              <div
-                style={{
-                  ...styles.toggleThumb,
-                  ...(isMuted ? styles.toggleThumbActive : {})
-                }}
-              />
+              <div style={{
+                ...styles.toggleThumb,
+                ...(isMuted ? styles.toggleThumbActive : {})
+              }} />
             </div>
           </div>
         </div>
 
-        <button
-          style={{...styles.button, marginTop: '20px'}}
-          onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.button)}
-          onClick={handleBack}
-        >
-          {t.back}
-        </button>
+        <DestinyButton label={t.back} onClick={handleBack} />
       </div>
     </>
   );
 
+  const TeamCard: React.FC<{ team: Team }> = ({ team }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const isSelected = selectedTeam === team.id;
+
+    return (
+      <div
+        style={{
+          ...styles.teamCard,
+          ...(isHovered && !isSelected ? styles.teamCardHover : {}),
+          ...(isSelected ? styles.teamCardSelected : {})
+        }}
+        onClick={() => handleTeamSelect(team.id)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <CornerDecor position="tl" />
+        <CornerDecor position="br" />
+        <div style={styles.teamLogo}>{team.logo}</div>
+        <div style={styles.teamName}>{team.name}</div>
+        {isSelected && (
+          <div style={{
+            position: 'absolute',
+            bottom: '5px',
+            left: '10px',
+            right: '10px',
+            height: '2px',
+            background: '#b4bec8',
+            boxShadow: '0 0 10px rgba(180, 190, 200, 0.6)'
+          }} />
+        )}
+      </div>
+    );
+  };
+
   const renderCareer = () => (
     <>
-      <div style={styles.brand}>{t.selectTeam}</div>
+      <div style={styles.header}>
+        <div style={styles.brand}>{t.selectTeam}</div>
+      </div>
       <div style={styles.careerContainer}>
-        {/* League Tabs */}
         <div style={styles.leagueTabs}>
           <button
             style={{
@@ -662,105 +716,43 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Team Grid */}
         <div style={styles.teamGrid}>
           {teams[selectedLeague].map((team) => (
-            <div
-              key={team.id}
-              style={{
-                ...styles.teamCard,
-                ...(selectedTeam === team.id ? styles.teamCardSelected : {})
-              }}
-              onClick={() => handleTeamSelect(team.id)}
-              onMouseEnter={(e) => {
-                if (selectedTeam !== team.id) {
-                  e.currentTarget.style.borderColor = 'rgba(74, 144, 226, 0.6)';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedTeam !== team.id) {
-                  e.currentTarget.style.borderColor = 'rgba(74, 144, 226, 0.3)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
-              }}
-            >
-              <div style={styles.teamLogo}>{team.logo}</div>
-              <div style={styles.teamName}>{team.name}</div>
-            </div>
+            <TeamCard key={team.id} team={team} />
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div style={{display: 'flex', gap: '20px', justifyContent: 'center'}}>
-          <button
-            style={styles.button}
-            onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-            onMouseLeave={(e) => Object.assign(e.currentTarget.style, styles.button)}
-            onClick={handleBack}
-          >
-            {t.back}
-          </button>
-          <button
-            style={{
-              ...styles.button,
-              ...styles.continueButton,
-              ...(selectedTeam ? {} : styles.buttonDisabled)
-            }}
-            onMouseEnter={(e) => {
-              if (selectedTeam) {
-                Object.assign(e.currentTarget.style, styles.buttonHover);
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (selectedTeam) {
-                Object.assign(e.currentTarget.style, styles.button);
-              }
-            }}
+        <div style={styles.actionBar}>
+          <DestinyButton label={t.back} onClick={handleBack} style={{ width: '180px' }} />
+          <DestinyButton
+            label={t.continue}
             onClick={handleContinue}
             disabled={!selectedTeam}
-          >
-            {t.continue}
-          </button>
+            style={{ width: '180px' }}
+          />
         </div>
       </div>
     </>
   );
 
-  // ============================================================================
-  // MAIN RENDER
-  // ============================================================================
-
   return (
     <div style={styles.container}>
-      <div style={styles.backgroundPattern} />
+      <div style={styles.gridPattern} />
+      <HexagonDecor size={200} style={styles.hexBackground} />
       <div style={styles.mainContent}>
         {currentView === 'main' && renderMainMenu()}
         {currentView === 'settings' && renderSettings()}
         {currentView === 'career' && renderCareer()}
       </div>
-
-      {/* Audio Elements */}
       <audio ref={bgMusicRef} loop>
         <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav" />
       </audio>
       <audio ref={clickSoundRef}>
-        <source src={generateClickSound()} type="audio/wav" />
+        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav" />
       </audio>
     </div>
   );
 };
 
-// ============================================================================
-// APP INITIALIZATION
-// ============================================================================
-
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+root.render(<React.StrictMode><App /></React.StrictMode>);
