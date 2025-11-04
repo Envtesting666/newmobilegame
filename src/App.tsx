@@ -1,9 +1,5 @@
-/**
- * Main Application Component
- * Handles routing and game state management
- */
-
 import React, { useState } from 'react';
+import './styles/index.css';
 import './styles/App.css';
 import { GameState, LeagueType, Team } from './types';
 import WelcomeScreen from './components/screens/WelcomeScreen';
@@ -35,7 +31,6 @@ function App() {
   const handleTeamSelect = (team: Team) => {
     setSelectedTeam(team);
 
-    // Initialize game state
     const initialGameState: GameState = {
       managerName,
       currentTeam: team,
