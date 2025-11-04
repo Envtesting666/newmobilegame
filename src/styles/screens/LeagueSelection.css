@@ -1,0 +1,132 @@
+/**
+ * League Selection Screen Styles
+ */
+
+.league-selection-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.league-selection-content {
+  max-width: 900px;
+  width: 100%;
+}
+
+.league-selection-content .header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.league-selection-content h2 {
+  font-size: 36px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.league-selection-content p {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.leagues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.league-card {
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-align: center;
+}
+
+.league-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  background-color: var(--surface-elevated);
+}
+
+.league-card:active {
+  transform: translateY(-2px);
+}
+
+.league-flag {
+  font-size: 64px;
+  margin-bottom: var(--spacing-md);
+}
+
+.league-name {
+  font-size: 28px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.league-country {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.league-info {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.info-item {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.league-teams {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.team-badge {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--accent);
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.team-badge.more {
+  background-color: var(--surface-elevated);
+  color: var(--text-secondary);
+}
+
+.language-note {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background-color: var(--surface);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .leagues-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,222 @@
+/**
+ * Home Screen Styles
+ */
+
+.home-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px; /* Space for bottom nav */
+}
+
+.top-bar {
+  background-color: var(--surface);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.manager-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.team-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.date-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.home-content {
+  flex: 1;
+  padding: var(--spacing-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.card h2 {
+  font-size: 20px;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.next-match-card {
+  grid-column: span 2;
+}
+
+.match-preview {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.coming-soon {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.placeholder-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.match-actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.match-actions button {
+  flex: 1;
+}
+
+.feed-placeholder {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-md);
+}
+
+.table-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.table-row.highlight {
+  background-color: var(--accent);
+  color: white;
+}
+
+.table-row .position {
+  font-weight: 700;
+  width: 30px;
+}
+
+.table-row .team-name {
+  flex: 1;
+}
+
+.table-row .points {
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-md);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--surface);
+  display: flex;
+  justify-content: space-around;
+  padding: var(--spacing-sm) 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.nav-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  border-radius: var(--radius-sm);
+}
+
+.nav-button.active {
+  color: var(--accent);
+}
+
+.nav-button:hover {
+  color: var(--text-primary);
+  background-color: var(--surface-elevated);
+}
+
+.nav-icon {
+  font-size: 24px;
+}
+
+.nav-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .home-content {
+    grid-template-columns: 1fr;
+  }
+
+  .next-match-card {
+    grid-column: span 1;
+  }
+
+  .match-actions {
+    flex-direction: column;
+  }
+}
